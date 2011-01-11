@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GRANITE DATA SERVICES
+  Copyright (C) 2011 GRANITE DATA SERVICES S.A.S.
+
+  This file is part of Granite Data Services for JDK 14 port.
+
+  Granite Data Services is free software; you can redistribute it and/or modify
+  it under the terms of the GNU Library General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or (at your
+  option) any later version.
+
+  Granite Data Services is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Library General Public License
+  for more details.
+
+  You should have received a copy of the GNU Library General Public License
+  along with this library; if not, see <http://www.gnu.org/licenses/>.
+-->
+
+<!--
+ ! @author Deepak Surti
+ !-->
+<project name="graniteds-jdk14" basedir="." default="distrib.all">
+
+	<property file="env.properties" />
+	<property file="project.properties" />
+	<xmlproperty prefix="eclipse" file=".project" />
+
+	<echo message="===============================================================================" />
+	<echo message="  Building Granite Data Services JDK 1.4 Port ${GDS_VERSION}" />
+	<echo message="  " />
+	<echo message="  $GRANITE_HOME=${GRANITE_HOME}" />
+	<echo message="  $JAVA_14_LIB=${JAVA_14_LIB}" />
+	<echo message="===============================================================================" />
+
+	<path id="gds14.classpath">
+		<fileset dir="lib">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${GRANITE_HOME}/lib">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${JAVA_14_LIB}">
+			<include name="rt.jar" />
+		</fileset>
+	</path>
+
+	<taskdef name="retrotranslator" classname="net.sf.retrotranslator.transformer.RetrotranslatorTask">
+		<classpath refid="gds14.classpath" />
+	</taskdef>
+
+	<target name="weave">
+		<delete dir="classes" />
+		<mkdir dir="classes/core" />
+		<retrotranslator destdir="classes/core" target="1.4" verify="true" backport="edu.test.backport" support="ThreadLocal.remove">
+			<fileset dir="${GRANITE_CORE_CLASSES}">
+				<include name="**/*.class" />
+				<exclude name="org/granite/messaging/service/Ejb*.class" />
+				<exclude name="org/granite/messaging/service/security/GlassFishSecurityService.class" />
+				<exclude name="org/granite/messaging/service/security/WebLogicSecurityService.class" />
+				<exclude name="org/granite/util/Entity.class" />
+				<exclude name="org/granite/messaging/amf/io/convert/impl/GAEKeyConverter.class" />
+				<exclude name="org/granite/config/servlet3/GraniteServlet3Initializer.class" />
+				<exclude name="org/granite/scan/VFSFileScannedItem.class" />
+				<exclude name="org/granite/scan/VFSScanner.class" />
+				<exclude name="org/granite/scan/VFS3FileScannedItem.class" />
+				<exclude name="org/granite/scan/VFS3Scanner.class" />
+				<exclude name="org/granite/messaging/amf/io/util/externalizer/MathContextExternalizer.class"/>
+				<exclude name="org/granite/messaging/amf/io/util/instantiator/MathContextInstantiator.class"/>
+			</fileset>
+			<classpath>
+				<path refid="gds14.classpath" />
+				<dirset dir="${GRANITE_CORE_CLASSES}" />
+			</classpath>
+		</retrotranslator>
+		<copy todir="classes/core">
+			<fileset dir="${GRANITE_CORE_CLASSES}">
+				<include name="org/granite/config/*.dtd" />
+				<include name="org/granite/config/*.xml" />
+			</fileset>
+		</copy>
+		<mkdir dir="classes/spring" />
+		<retrotranslator destdir="classes/spring" target="1.4" verify="true" backport="edu.test.backport">
+			<fileset dir="${GRANITE_SPRING_CLASSES}">
+				<include name="**/*.class" />
+				<exclude name="org/granite/tide/**" />
+				<exclude name="org/granite/spring/*Destination.class" />
+				<exclude name="org/granite/spring/FlexFilterBeanDefinitionParser.class" />
+				<exclude name="org/granite/spring/GranitedsNamespaceHandler.class" />
+				<exclude name="org/granite/spring/security/SpringSecurity3Service.class" />
+				<exclude name="org/granite/spring/security/AbstractSpringSecurity3Interceptor.class"/>
+			</fileset>
+			<classpath>
+				<path refid="gds14.classpath" />
+				<dirset dir="${GRANITE_SPRING_CLASSES}" />
+				<dirset dir="classes/core" />
+			</classpath>
+		</retrotranslator>
+	</target>
+
+	<target name="jars" depends="weave">
+		<delete dir="build" />
+		<mkdir dir="build" />
+		<mkdir dir="build/META-INF" />
+
+		<!-- Create Jars Manifest -->
+		<tstamp>
+			<format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss 'GMT'Z" />
+		</tstamp>
+		<manifest file="build/META-INF/MANIFEST.MF">
+			<section name="graniteds_jdk14/java">
+				<attribute name="Implementation-Vendor" value="Granite Data Services JDK 14 Port" />
+				<attribute name="Implementation-Version" value="${GDS_VERSION} (${TODAY})" />
+			</section>
+		</manifest>
+
+
+		<jar destfile="build/graniteds-jdk14.jar" manifest="build/META-INF/MANIFEST.MF">
+			<fileset dir="classes/core">
+				<include name="**" />
+			</fileset>
+		</jar>
+		<jar destfile="build/graniteds-spring-jdk14.jar" manifest="build/META-INF/MANIFEST.MF">
+			<fileset dir="classes/spring">
+				<include name="**" />
+			</fileset>
+		</jar>
+	</target>
+	
+	<target name="distrib.all" depends="jars">
+        <delete>
+            <fileset dir=".">
+                <include name="graniteds-jdk14-*.zip"/>
+            </fileset>
+        </delete>
+
+		<mkdir dir="build/${eclipse.projectDescription.name}" />
+		<mkdir dir="build/${eclipse.projectDescription.name}/build" />
+
+		<copy todir="build/${eclipse.projectDescription.name}">
+			<fileset dir=".">
+				<include name="**" />
+				<exclude name="*.zip" />
+				<exclude name="classes/**" />
+				<exclude name="build/**" />
+			</fileset>
+		</copy>
+
+		<copy todir="build/${eclipse.projectDescription.name}/build">
+			<fileset dir="build">
+				<include name="*.jar" />
+			</fileset>
+		</copy>
+
+		<zip destfile="graniteds-jdk14-${GDS_VERSION}.zip">
+			<fileset dir="build">
+				<include name="${eclipse.projectDescription.name}/**" />
+			</fileset>
+		</zip>
+	</target>
+</project>
