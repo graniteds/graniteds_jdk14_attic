@@ -145,6 +145,8 @@
 				<exclude name="*.zip" />
 				<exclude name="classes/**" />
 				<exclude name="build/**" />
+				<exclude name=".git/**" />
+				<exclude name="**/.gitignore" />
 			</fileset>
 		</copy>
 
