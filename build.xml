@@ -44,6 +44,7 @@
 		</fileset>
 		<fileset dir="${JAVA_14_LIB}">
 			<include name="rt.jar" />
+			<include name="classes.jar" />
 		</fileset>
 	</path>
 
@@ -91,6 +92,7 @@
 				<exclude name="org/granite/spring/GranitedsNamespaceHandler.class" />
 				<exclude name="org/granite/spring/security/SpringSecurity3Service.class" />
 				<exclude name="org/granite/spring/security/AbstractSpringSecurity3Interceptor.class"/>
+				<exclude name="org/granite/spring/SpringGravityFactoryBean.class"/>
 			</fileset>
 			<classpath>
 				<path refid="gds14.classpath" />
